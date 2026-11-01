@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finanças Pessoais</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--pri:#1565c0;--onpri:#fff;--bg:#f5f5f5;--surf:#fff;--txt:#212121;--sub:#616161;--line:#e0e0e0;--pos:#2e7d32;--neg:#c62828;--bal:#1565c0}
+[data-theme=dark]{--pri:#90caf9;--onpri:#0d2a47;--bg:#121212;--surf:#1e1e1e;--txt:#eee;--sub:#aaa;--line:#333;--pos:#66bb6a;--neg:#ef5350;--bal:#64b5f6}
+*{box-sizing:border-box}
+body{margin:0;font-family:Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt)}
+.material-symbols-outlined{vertical-align:middle}
+header{position:fixed;top:0;left:0;right:0;height:56px;background:var(--pri);color:var(--onpri);display:flex;align-items:center;gap:8px;padding:0 8px;z-index:20;box-shadow:0 2px 4px #0004}
+header h1{font-size:20px;font-weight:500;margin:0;flex:1}
+.ib{background:none;border:0;color:inherit;width:40px;height:40px;border-radius:50%;cursor:pointer}
+.ib:hover{background:#ffffff26}
+aside{position:fixed;top:56px;left:0;bottom:0;width:250px;background:var(--surf);border-right:1px solid var(--line);padding:8px;transition:transform .2s;z-index:10}
+body.closed aside{transform:translateX(-100%)}
+aside a{display:flex;align-items:center;gap:16px;padding:12px 16px;border-radius:24px;color:var(--txt);text-decoration:none;cursor:pointer;font-weight:500;font-size:14px}
+aside a:hover{background:var(--bg)}
+aside a.on{background:color-mix(in srgb,var(--pri) 18%,transparent);color:var(--pri)}
+main{margin:56px 0 0 250px;padding:16px;transition:margin .2s}
+body.closed main{margin-left:0}
+@media(max-width:800px){main{margin-left:0}aside{box-shadow:2px 0 8px #0004}}
+.card{background:var(--surf);border-radius:8px;box-shadow:0 1px 3px #0003;padding:16px;margin-bottom:16px}
+h2{font-weight:400;font-size:24px;margin:0 0 16px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--sub);gap:4px}
+input,select{font:inherit;font-size:14px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surf);color:var(--txt)}
+.btn{font:inherit;font-weight:500;font-size:14px;text-transform:uppercase;border:0;border-radius:4px;padding:10px 16px;background:var(--pri);color:var(--onpri);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.o{background:none;color:var(--pri);border:1px solid var(--line)}
+.btn.d{background:var(--neg);color:#fff}
+.tw{overflow-x:auto;width:100%}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
+th.s{cursor:pointer;user-select:none;white-space:nowrap}
+td.v{text-align:right;font-weight:500;white-space:nowrap}
+.p{color:var(--pos)}.n{color:var(--neg)}
+.pg{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:flex-end;padding-top:12px;font-size:14px;color:var(--sub)}
+.msg{margin-top:12px;font-size:14px;white-space:pre-line}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:12px 20px;border-radius:4px;display:none;z-index:50}
+dialog{border:0;border-radius:8px;padding:20px;width:min(420px,92vw);background:var(--surf);color:var(--txt)}
+dialog form{display:flex;flex-direction:column;gap:12px}
+.chk{flex-direction:row;align-items:center;gap:8px;font-size:14px;color:var(--txt)}
+.cv{position:relative;height:420px}
+.file{font-size:13px;opacity:.9;margin-right:4px}
+@media(max-width:600px){.file{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <button class="ib" id="menu" title="Menu"><span class="material-symbols-outlined">menu</span></button>
+  <h1>Finanças Pessoais</h1>
+  <span class="file" id="fname">Sem arquivo</span>
+  <button class="ib" id="openf" title="Abrir arquivo de dados"><span class="material-symbols-outlined">folder_open</span></button>
+  <button class="ib" id="newf" title="Criar arquivo de dados"><span class="material-symbols-outlined">note_add</span></button>
+  <button class="ib" id="theme" title="Alternar tema"><span class="material-symbols-outlined">dark_mode</span></button>
+</header>
+<aside>
+  <a data-p="imp"><span class="material-symbols-outlined">upload_file</span>Importação de extratos</a>
+  <a data-p="dash"><span class="material-symbols-outlined">bar_chart</span>Dashboard</a>
+  <a data-p="qry"><span class="material-symbols-outlined">table_view</span>Consulta de Extrato</a>
+</aside>
+<main>
+<section id="imp" class="card">
+  <h2>Importação de extratos</h2>
+  <div class="row">
+    <label>Arquivo CSV (Bradesco ou Nubank)<input type="file" id="csv" accept=".csv,text/csv" multiple></label>
+  </div>
+  <div class="msg" id="impmsg">Abra ou crie um arquivo de dados (ícones no topo) e depois selecione um CSV.</div>
+</section>
+<section id="dash" hidden>
+  <div class="card">
+    <h2>Dashboard</h2>
+    <div class="row">
+      <label>Data inicial<input type="date" id="d1"></label>
+      <label>Data final<input type="date" id="d2"></label>
+      <label class="chk"><input type="checkbox" id="onlyBal">Exibir somente balanço</label>
+      <button class="btn" id="apply">Aplicar</button>
+    </div>
+  </div>
+  <div class="card"><div class="cv"><canvas id="chart"></canvas></div></div>
+</section>
+<section id="qry" class="card" hidden>
+  <h2>Consulta de Extrato</h2>
+  <div class="row">
+    <label>Descrição<input id="fDesc"></label>
+    <label>Valor<input id="fVal"></label>
+    <label>Código<input id="fCode"></label>
+    <label>Banco<input id="fBank"></label>
+    <label>Data inicial<input type="date" id="fD1"></label>
+    <label>Data final<input type="date" id="fD2"></label>
+    <button class="btn" id="search"><span class="material-symbols-outlined">search</span>Consultar</button>
+    <button class="btn o" id="add"><span class="material-symbols-outlined">add</span>Novo</button>
+  </div>
+  <div class="tw" style="margin-top:16px"><table>
+    <thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody>
+  </table></div>
+  <div class="pg">
+    <label class="chk" style="color:var(--sub)">Itens por página
+      <select id="size"><option>5</option><option selected>10</option><option>20</option><option>50</option><option>100</option></select></label>
+    <span id="info"></span>
+    <button class="ib" style="color:var(--txt)" id="prev"><span class="material-symbols-outlined">chevron_left</span></button>
+    <button class="ib" style="color:var(--txt)" id="next"><span class="material-symbols-outlined">chevron_right</span></button>
+  </div>
+</section>
+</main>
+<dialog id="dlg"><form method="dialog" id="frm">
+  <h2 id="dtitle" style="font-size:20px;margin:0">Lançamento</h2>
+  <label>Descrição<input id="eDesc" required></label>
+  <label>Valor (ex: -101.99)<input id="eVal" required pattern="-?\d+(\.\d{1,2})?"></label>
+  <label>Código<input id="eCode"></label>
+  <label>Banco<input id="eBank"></label>
+  <label>Data<input type="date" id="eDate" required></label>
+  <div class="row" style="justify-content:flex-end">
+    <button type="button" class="btn o" id="cancel">Cancelar</button>
+    <button class="btn" id="save">Salvar</button>
+  </div>
+</form></dialog>
+<div id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const VERSION="1.0.0";
+let data={version:VERSION,statement:[]},handle=null,chart=null;
+const q={sort:'createdAt',dir:-1,page:0,f:{}};
+let editIdx=-1;
+
+/* ---------- util ---------- */
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',3500)}
+const key=s=>[s.description,s.value,s.bankCode,s.bankInfo,s.createdAt].join('\u0001');
+const brl=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const dmy=iso=>iso.slice(0,10).split('-').reverse().join('/');
+function isoFromBR(s){const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s.trim());return m?`${m[3]}-${m[2]}-${m[1]}`:null}
+function num(s){return s.replace(/\./g,'').replace(',','.')}
+
+/* ---------- persistência (File System Access API) ---------- */
+function setName(n){$('fname').textContent=n||'Sem arquivo'}
+async function persist(){
+  if(!handle){toast('Abra ou crie um arquivo de dados para salvar.');return false}
+  try{const w=await handle.createWritable();await w.write(JSON.stringify(data,null,2));await w.close();return true}
+  catch(e){toast('Erro ao salvar: '+e.message);return false}
+}
+async function openFile(){
+  if(!window.showOpenFilePicker)return toast('Seu navegador não suporta a File System Access API. Use Chrome ou Edge.');
+  try{
+    [handle]=await showOpenFilePicker({types:[{description:'JSON',accept:{'application/json':['.json']}}]});
+    const t=await (await handle.getFile()).text();
+    const j=t.trim()?JSON.parse(t):{};
+    data={version:j.version||VERSION,statement:Array.isArray(j.statement)?j.statement:[]};
+    setName(handle.name);toast(data.statement.length+' lançamentos carregados.');refresh();
+  }catch(e){if(e.name!=='AbortError')toast('Erro ao abrir: '+e.message)}
+}
+async function newFile(){
+  if(!window.showSaveFilePicker)return toast('Seu navegador não suporta a File System Access API. Use Chrome ou Edge.');
+  try{
+    handle=await showSaveFilePicker({suggestedName:'minha-financa.json',types:[{description:'JSON',accept:{'application/json':['.json']}}]});
+    data={version:VERSION,statement:[]};await persist();setName(handle.name);refresh();
+  }catch(e){if(e.name!=='AbortError')toast('Erro: '+e.message)}
+}
+
+/* ---------- CSV ---------- */
+function parseLine(l,sep){
+  const out=[];let cur='',qt=false;
+  for(let i=0;i<l.length;i++){const c=l[i];
+    if(c==='"'){if(qt&&l[i+1]==='"'){cur+='"';i++}else qt=!qt}
+    else if(c===sep&&!qt){out.push(cur);cur=''}else cur+=c}
+  out.push(cur);return out.map(s=>s.trim());
+}
+function parseBradesco(lines){
+  const info=(lines[0].split(';')[0].replace(/^Extrato de:\s*/i,'')).trim();
+  const out=[];
+  for(const l of lines.slice(2)){
+    const f=parseLine(l,';'),d=isoFromBR(f[0]||'');
+    if(!d)continue; // ignora linhas fora do padrão
+    const cr=(f[3]||'').trim(),db=(f[4]||'').trim();
+    let v;
+    if(cr)v=num(cr);else if(db)v='-'+num(db);else continue;
+    if(isNaN(parseFloat(v)))continue;
+    out.push({description:f[1]||'',value:parseFloat(v).toFixed(2),bankCode:f[2]||'',bankInfo:info,createdAt:d});
+  }
+  return out;
+}
+function parseNubank(lines){
+  const out=[];
+  for(const l of lines.slice(1)){
+    const f=parseLine(l,','),d=isoFromBR(f[0]||'');
+    const v=parseFloat(f[1]);
+    if(!d||isNaN(v))continue;
+    out.push({description:f[3]||'',value:v.toFixed(2),bankCode:f[2]||'',bankInfo:'nubank',createdAt:d});
+  }
+  return out;
+}
+async function importCsv(files){
+  if(!handle)return $('impmsg').textContent='Abra ou crie um arquivo de dados antes de importar.';
+  const known=new Set(data.statement.map(key));
+  let msg='';
+  for(const file of files){
+    const text=(await file.text()).replace(/^\uFEFF/,'');
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    let rows;
+    if(/^Extrato de/i.test(lines[0]))rows=parseBradesco(lines);
+    else if(/^Data,Valor/i.test(lines[0]))rows=parseNubank(lines);
+    else{msg+=`${file.name}: formato não reconhecido.\n`;continue}
+    let added=0;
+    for(const r of rows){const k=key(r);if(known.has(k))continue;known.add(k);data.statement.push(r);added++}
+    msg+=`${file.name}: ${added} importados, ${rows.length-added} duplicados ignorados.\n`;
+  }
+  if(await persist())msg+='Dados salvos.';
+  $('impmsg').textContent=msg;$('csv').value='';
+}
+
+/* ---------- dashboard ---------- */
+function drawChart(){
+  const d1=$('d1').value,d2=$('d2').value;
+  const rows=data.statement.filter(s=>(!d1||s.createdAt>=d1)&&(!d2||s.createdAt<=d2));
+  const m={};
+  rows.forEach(s=>{const k=s.createdAt.slice(0,7);const o=m[k]??=[0,0];const v=parseFloat(s.value);v>=0?o[0]+=v:o[1]+=-v});
+  const keys=Object.keys(m).sort();
+  const labels=keys.map(k=>k.slice(5)+'/'+k.slice(0,4));
+  const cs=getComputedStyle(document.documentElement),g=n=>cs.getPropertyValue(n).trim();
+  const bal=$('onlyBal').checked;
+  const ds=bal?[{label:'Balanço',data:keys.map(k=>+(m[k][0]-m[k][1]).toFixed(2)),backgroundColor:g('--bal')}]
+    :[{label:'Crédito',data:keys.map(k=>+m[k][0].toFixed(2)),backgroundColor:g('--pos')},
+      {label:'Débito',data:keys.map(k=>+m[k][1].toFixed(2)),backgroundColor:g('--neg')}];
+  chart?.destroy();
+  Chart.defaults.color=g('--txt');
+  chart=new Chart($('chart'),{type:'bar',data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,
+    scales:{y:{beginAtZero:true,grid:{color:g('--line')},ticks:{callback:v=>brl(v)}},x:{grid:{display:false}}},
+    plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${brl(c.parsed.y)}`}}}}});
+}
+
+/* ---------- consulta / CRUD ---------- */
+const cols=[['description','Descrição'],['value','Valor'],['bankCode','Código'],['bankInfo','Banco'],['createdAt','Data']];
+function renderHead(){
+  $('thead').innerHTML=cols.map(([k,l])=>{
+    const ic=q.sort===k?(q.dir>0?'arrow_upward':'arrow_downward'):'unfold_more';
+    return `<th class="s" data-k="${k}">${l} <span class="material-symbols-outlined" style="font-size:18px">${ic}</span></th>`}).join('')+'<th>Ações</th>';
+}
+function filtered(){
+  const f=q.f;
+  return data.statement.map((s,i)=>({s,i})).filter(({s})=>
+    (!f.desc||s.description.toLowerCase().includes(f.desc))&&
+    (!f.val||s.value.includes(f.val))&&
+    (!f.code||s.bankCode.toLowerCase().includes(f.code))&&
+    (!f.bank||s.bankInfo.toLowerCase().includes(f.bank))&&
+    (!f.d1||s.createdAt>=f.d1)&&(!f.d2||s.createdAt<=f.d2));
+}
+function renderTable(){
+  renderHead();
+  const r=filtered().sort((a,b)=>{
+    const x=a.s[q.sort],y=b.s[q.sort];
+    const c=q.sort==='value'?parseFloat(x)-parseFloat(y):String(x).localeCompare(String(y),'pt-BR');
+    return c*q.dir});
+  const size=+$('size').value,pages=Math.max(1,Math.ceil(r.length/size));
+  q.page=Math.min(q.page,pages-1);
+  const view=r.slice(q.page*size,(q.page+1)*size);
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  $('tbody').innerHTML=view.length?view.map(({s,i})=>`<tr><td>${esc(s.description)}</td>
+    <td class="v ${parseFloat(s.value)<0?'n':'p'}">${brl(s.value)}</td><td>${esc(s.bankCode)}</td><td>${esc(s.bankInfo)}</td><td>${dmy(s.createdAt)}</td>
+    <td style="white-space:nowrap"><button class="ib" style="color:var(--txt)" data-e="${i}" title="Editar"><span class="material-symbols-outlined">edit</span></button>
+    <button class="ib" style="color:var(--neg)" data-x="${i}" title="Excluir"><span class="material-symbols-outlined">delete</span></button></td></tr>`).join('')
+    :'<tr><td colspan="6" style="text-align:center;color:var(--sub)">Nenhum lançamento encontrado.</td></tr>';
+  $('info').textContent=`Página ${q.page+1} de ${pages} (${r.length} itens)`;
+  $('prev').disabled=q.page===0;$('next').disabled=q.page>=pages-1;
+}
+function readFilters(){
+  q.f={desc:$('fDesc').value.toLowerCase().trim(),val:$('fVal').value.trim(),code:$('fCode').value.toLowerCase().trim(),
+    bank:$('fBank').value.toLowerCase().trim(),d1:$('fD1').value,d2:$('fD2').value};
+  q.page=0;renderTable();
+}
+function openDlg(i){
+  editIdx=i;const s=i>=0?data.statement[i]:{description:'',value:'',bankCode:'',bankInfo:'',createdAt:''};
+  $('dtitle').textContent=i>=0?'Editar lançamento':'Novo lançamento';
+  $('eDesc').value=s.description;$('eVal').value=s.value;$('eCode').value=s.bankCode;$('eBank').value=s.bankInfo;$('eDate').value=s.createdAt;
+  $('dlg').showModal();
+}
+async function saveDlg(){
+  const s={description:$('eDesc').value.trim(),value:parseFloat($('eVal').value).toFixed(2),bankCode:$('eCode').value.trim(),
+    bankInfo:$('eBank').value.trim(),createdAt:$('eDate').value};
+  const k=key(s);
+  if(data.statement.some((x,i)=>i!==editIdx&&key(x)===k))return toast('Já existe um lançamento idêntico.');
+  if(editIdx>=0)data.statement[editIdx]=s;else data.statement.push(s);
+  $('dlg').close();
+  if(await persist())toast('Lançamento salvo.');
+  renderTable();
+}
+
+/* ---------- navegação e eventos ---------- */
+function go(p){
+  ['imp','dash','qry'].forEach(id=>$(id).hidden=id!==p);
+  document.querySelectorAll('aside a').forEach(a=>a.classList.toggle('on',a.dataset.p===p));
+  if(innerWidth<=800)document.body.classList.add('closed');
+  if(p==='dash')drawChart();if(p==='qry')renderTable();
+}
+function refresh(){if(!$('dash').hidden)drawChart();if(!$('qry').hidden)renderTable()}
+function setTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem('fp-theme',t);
+  $('theme').firstElementChild.textContent=t==='dark'?'light_mode':'dark_mode';refresh()}
+
+$('menu').onclick=()=>document.body.classList.toggle('closed');
+$('theme').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+$('openf').onclick=openFile;$('newf').onclick=newFile;
+document.querySelectorAll('aside a').forEach(a=>a.onclick=()=>go(a.dataset.p));
+$('csv').onchange=e=>importCsv([...e.target.files]);
+$('apply').onclick=drawChart;
+$('onlyBal').onchange=drawChart;
+$('search').onclick=readFilters;
+$('size').onchange=()=>{q.page=0;renderTable()};
+$('prev').onclick=()=>{q.page--;renderTable()};
+$('next').onclick=()=>{q.page++;renderTable()};
+$('add').onclick=()=>openDlg(-1);
+$('cancel').onclick=()=>$('dlg').close();
+$('frm').onsubmit=e=>{e.preventDefault();saveDlg()};
+$('thead').onclick=e=>{const th=e.target.closest('th.s');if(!th)return;
+  q.dir=q.sort===th.dataset.k?-q.dir:1;q.sort=th.dataset.k;renderTable()};
+$('tbody').onclick=async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.e!==undefined)openDlg(+b.dataset.e);
+  else if(b.dataset.x!==undefined&&confirm('Excluir este lançamento?')){
+    data.statement.splice(+b.dataset.x,1);await persist();renderTable()}
+};
+if(innerWidth<=800)document.body.classList.add('closed');
+setTheme(localStorage.getItem('fp-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+go('imp');
+</script>
+</body>
+</html>
